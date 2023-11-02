@@ -2,6 +2,22 @@ import { Component, ElementRef, Input, OnChanges, OnInit, SimpleChanges, ViewChi
 import { LedgeListItem } from '../../components/model/ledge-chart.model';
 import * as d3 from 'd3';
 
+const takeEvery2 = (array: any[]): Array<any[]> => {
+  const emitEvery2Item = [];
+  for (let i = 1; i < array.length; i = i + 2) {
+    emitEvery2Item.push(
+      [array[i - 1], array[i]]
+    );
+  }
+  if (array.length % 2 !== 0) {
+    emitEvery2Item.push(
+      [array[array.length - 1]]
+    );
+  }
+  return emitEvery2Item;
+};
+
+
 @Component({
   selector: 'ledge-tech-radar',
   templateUrl: './ledge-tech-radar.component.html',
@@ -50,10 +66,16 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
         const level = this.getLevelByName(levelList.name);
         if (levelList.children) {
           for (const finalItem of levelList.children) {
+            const metaData = (finalItem.children || []).map((i) => i.name);
+            const linkMatch = (metaData.find(name => name.indexOf('link:') === 0) || '').substring(5).trim().match(/href="(?<link>.*?)"/);
+
+            const desc = (metaData.find(name => name.indexOf('desc:') === 0) || '').substring(5).trim();
             items.push({
               levelName: levelList.name,
               name: finalItem.name,
-              circle: level
+              circle: level,
+              link: linkMatch ? linkMatch.groups.link : '',
+              desc
             });
           }
         }
@@ -102,18 +124,29 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
       h: 600,				// Height of the circle
       margin: {top: 10, right: 20, bottom: 10, left: 10}, // The margins of the SVG
       levels: this.currentLevel + 1,				// How many levels or inner circles should there be drawn
-      labelFactor: 1.1, 	// How much farther than the radius of the outer circle should the labels be placed
-      dotRadius: 15, 			// The size of the colored circles of each blog
+      labelFactor: 1.1,   // How much farther than the radius of the outer circle should the labels be placed
+      dotRadius: 8,      // The size of the colored circles of each blog
       color: d3.schemeCategory10	// Color function
     };
 
     const radar = d3.select(chartElement);
+    const Tooltip = radar.append('div')
+      .style('opacity', 0)
+      .attr('class', 'tooltip')
+      .style('position', 'fixed')
+      .style('background-color', 'white')
+      .style('border', 'solid')
+      .style('border-width', '2px')
+      .style('border-radius', '5px')
+      .style('padding', '5px')
+      .style('max-width', '300px');
+
     drawChart(enrichData(treeData));
 
     function drawChart(data) {
-      const allAxis = (d3.keys(data));           	// Names of each axis
+      const allAxis = (d3.keys(data));            // Names of each axis
       const total = allAxis.length;					// The number of different axes
-      const radius = Math.min(cfg.w / 2, cfg.h / 2); 	// Radius of the outermost circle
+      const radius = Math.min(cfg.w / 2, cfg.h / 2);  // Radius of the outermost circle
       const angleSlice = Math.PI * 2 / total;		// The width in radians of each "slice"
 
       // Scale for the radius
@@ -199,6 +232,29 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
       /////////////////////////////////////////////////////////
 
       // Create a dot for each technology in it's sector
+      const tooltipMouseover = () => {
+        Tooltip
+            .style('opacity', 1);
+        d3.select(this)
+            .style('stroke', 'black')
+            .style('opacity', 1);
+      };
+      const tooltipMousemove = (tooltipContentGen: (item: any) => string) => (d) => {
+        Tooltip
+            .html(tooltipContentGen(d))
+            .style('left', (d3.event.clientX + 12) + 'px')
+            .style('top', (d3.event.clientY + 12) + 'px');
+      };
+      const tooltipMouseleave = () => {
+        Tooltip
+            .style('opacity', 0)
+            .html('')
+            .style('left', '-100px')
+            .style('top', '-100px');
+        d3.select(this)
+            .style('stroke', 'none')
+            .style('opacity', 0.8);
+      };
       g.selectAll('.radarSections')
         .data(data)
         .enter()
@@ -219,15 +275,13 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
               return `translate(${x}, ${y})`;
             })
             .attr('class', 'tech-circle')
-            .on('click', handleClick)
-            .on('mouseover', (event: any) => {
-              d3.selectAll(`.legend li`)
-                .classed('active', false)
-                .filter((d: any) => {
-                  return d.number === event.number;
-                })
-                .classed('active', true);
-            });
+            .on('mouseover', function() {
+              tooltipMouseover();
+              onFocus.bind(this)();
+            })
+            .on('click', (d) => d.link && window.open(d.link, '_blank'))
+           .on('mousemove', tooltipMousemove(d => `${d.name} <br /> ${d.desc}`))
+           .on('mouseleave', tooltipMouseleave);
 
           radarCircle.append('circle')
             .attr('class', 'radarCircle, color-' + (c + 1))
@@ -263,14 +317,41 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
         .attr('start', (d: any) => {
           return d.items[0] ? d.items[0].number : 0;
         })
-        .selectAll('li')
-        .data((d: any) => d.items)
+        .selectAll('.tuple')
+        .data((d: any) => {
+          const groupByResult = d.items.reduce((acc, item) => ({ ...acc, [item.levelName]: [...(acc[item.levelName] || []), item] }), {});
+          return takeEvery2(Object.entries(groupByResult));
+        })
         .enter()
-        .append('li')
-        .append('a')
-        // .attr('href', '#radarChart')
-        .on('click', handleClick)
-        .text((d: any) => d.name);
+        .append('div')
+        .attr('class', `tuple`)
+        .each(function(every2Groups, index) {
+          d3.select(this)
+            .selectAll(`.group`)
+            .data(every2Groups)
+            .enter()
+            .append('div')
+            .attr('class', `group`)
+            .each(function([title, items]) {
+              d3.select(this)
+                .html(`<h3>${title}</h3>`);
+              d3.select(this)
+                .selectAll('li')
+                .data(items)
+                .enter()
+                .append('li')
+                .on('mouseover', function() {
+                  tooltipMouseover();
+                  onFocus.bind(this)();
+                })
+                .on('click', (d) => d.link && window.open(d.link, '_blank'))
+                .on('mousemove', tooltipMousemove(d => `${d.name} <br/> ${d.desc}`))
+                .on('mouseleave', tooltipMouseleave)
+                .html((d: any) => {
+                  return d.link ? `<a>${d.name}</a><sub><a target="_blank" href="${d.link}">§</a>&nbsp;&nbsp;</sub>` : `<a>${d.name}</a>`;
+                });
+            });
+        });
     }
 
     /**
@@ -322,7 +403,7 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
       return ((level + 1) * oneCirclesShareOfScale) - randomPointOnShareOfScale;
     }
 
-    function handleClick(data) {
+    function onFocus() {
       // First remove all click-handlers
       d3.selectAll('.active')
         .classed('active', false);

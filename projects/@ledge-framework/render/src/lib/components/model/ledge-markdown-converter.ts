@@ -89,7 +89,6 @@ const LedgeMarkdownConverter = {
         case 'text': {
           let text = marked.inlineLexer(token.text, tokens.links);
           text = this.unescaped(text);
-
           result += `"name": ${JSON.stringify(text)},`;
           break;
         }

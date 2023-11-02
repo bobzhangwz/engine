@@ -10,6 +10,20 @@ online editor: [https://devops.phodal.com/helper](https://devops.phodal.com/help
 ![npm](https://img.shields.io/npm/v/@ledge-framework/render?label=%40ledge-framework%2Frender)
 ![npm](https://img.shields.io/npm/v/@ledge-framework/view?label=%40ledge-framework%2Fview)
 
+## How to build
+
+```bash
+yarn build:render && yarn build:ci
+```
+
+### How to dev in local
+
+```bash
+yarn dev:render
+yarn dev:view
+yarn start
+```
+
 ## Syntax
 
 ### Ledge extend code syntax
@@ -68,7 +82,7 @@ config: {"type": "slider"}
 1. import styles
 
 ```html
-<link rel="stylesheet" href="https://theme.ledge.ink/styles.css">
+<link rel="stylesheet" href="https://theme.ledge.ink/styles.css" />
 ```
 
 2. import code
@@ -76,10 +90,10 @@ config: {"type": "slider"}
 ```html
 <div id="ledge-content"></div>
 <script>
-  var content = document.getElementById('ledge-content');
-  var tile = document.createElement('ledge-theme');
-  var text = "{{ page.content | uri_escape }}"
-  tile.setAttribute('content', decodeURIComponent(text));
+  var content = document.getElementById("ledge-content");
+  var tile = document.createElement("ledge-theme");
+  var text = "{{ page.content | uri_escape }}";
+  tile.setAttribute("content", decodeURIComponent(text));
 
   content.appendChild(tile);
 </script>
@@ -123,7 +137,6 @@ or import in `angular.json`
 ```
 <ledge-render [content]="content"></ledge-render>
 ```
-
 
 ## LICENSE
 
