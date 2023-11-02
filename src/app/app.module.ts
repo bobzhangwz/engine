@@ -2,6 +2,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { DoBootstrap, Injector, NgModule } from '@angular/core';
 import { AngularSplitModule } from 'angular-split';
 import { AppRoutingModule } from './app-routing.module';
+import { APP_BASE_HREF } from '@angular/common';
 
 import { createCustomElement } from '@angular/elements';
 import { LedgeComponent } from './ledge/ledge.component';
@@ -17,7 +18,7 @@ import { LedgeEditorComponent } from './ledge-editor/ledge-editor.component';
     LedgeRenderModule,
     AppRoutingModule,
   ],
-  providers: [],
+  providers: [{provide: APP_BASE_HREF, useValue: '/'}],
   // bootstrap: [LedgeComponent],
   entryComponents: [LedgeComponent],
 })
