@@ -239,9 +239,10 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
             .style('stroke', 'black')
             .style('opacity', 1);
       };
-      const tooltipMousemove = (tooltipContentGen: (item: any) => string) => (d) => {
+      const tooltipMousemove = (d) => {
+        const name = d.link ? `${d.name}<sub>⇗</sub>` : `${d.name}`;
         Tooltip
-            .html(tooltipContentGen(d))
+            .html(`${name} <br /> ${d.desc}`)
             .style('left', (d3.event.clientX + 12) + 'px')
             .style('top', (d3.event.clientY + 12) + 'px');
       };
@@ -280,7 +281,7 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
               onFocus.bind(this)();
             })
             .on('click', (d) => d.link && window.open(d.link, '_blank'))
-           .on('mousemove', tooltipMousemove(d => `${d.name} <br /> ${d.desc}`))
+           .on('mousemove', tooltipMousemove)
            .on('mouseleave', tooltipMouseleave);
 
           radarCircle.append('circle')
@@ -345,11 +346,9 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
                   onFocus.bind(this)();
                 })
                 .on('click', (d) => d.link && window.open(d.link, '_blank'))
-                .on('mousemove', tooltipMousemove(d => `${d.name} <br/> ${d.desc}`))
+                .on('mousemove', tooltipMousemove)
                 .on('mouseleave', tooltipMouseleave)
-                .html((d: any) => {
-                  return d.link ? `<a>${d.name}</a><sub><a target="_blank" href="${d.link}">§</a>&nbsp;&nbsp;</sub>` : `<a>${d.name}</a>`;
-                });
+                .html((d: any) => `<a>${d.name}</a>`);
             });
         });
     }

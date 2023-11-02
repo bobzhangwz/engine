@@ -12,6 +12,8 @@ online editor: [https://devops.phodal.com/helper](https://devops.phodal.com/help
 
 ## How to build
 
+`ln -s $pwd/dist/@ledge-framework node_modules/@ledge-framework`
+
 ```bash
 yarn build:render && yarn build:ci
 ```
