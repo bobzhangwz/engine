@@ -348,7 +348,7 @@ export class LedgeTechRadarComponent implements OnInit, OnChanges {
                 .on('click', (d) => d.link && window.open(d.link, '_blank'))
                 .on('mousemove', tooltipMousemove)
                 .on('mouseleave', tooltipMouseleave)
-                .html((d: any) => `<a>${d.name}</a>`);
+                .html((d: any) => d.link ? `<a>${d.name}</a><sub>⇗</sub>` : `<a>${d.name}</a>`);
             });
         });
     }
